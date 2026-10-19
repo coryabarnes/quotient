@@ -7,16 +7,20 @@ The source recipe is `snap/snapcraft.yaml`; the build and smoke checks are in
 
 ## Current release
 
-Version 0.1.0, revision 1, is published on `latest/edge`. The Snap passed
+Version 0.1.0 is published on `latest/stable` and `latest/edge`. The Snap passed
 Canonical's automated review. Its build, installation, representative calculations
-and desktop startup passed on Ubuntu 24.04; calculations also passed on Fedora 44.
+and desktop startup passed on Ubuntu 24.04. Desktop acceptance checks were
+confirmed on Fedora 44, including file dialogs, copying results and launcher icons.
 
 ```sh
-sudo snap install quotient --edge
+sudo snap install quotient
 ```
 
-The first release is a testing build. A stable-channel release follows the
-remaining desktop acceptance checks below.
+To switch an existing testing installation to stable:
+
+```sh
+sudo snap refresh quotient --stable
+```
 
 ## Build and test
 
@@ -66,10 +70,16 @@ support depends on the host; Fedora currently reports partial support.
 5. Complete the listing with the bundled icon and the screenshots in
    `docs/screenshots/`. The package description comes from `snap/snapcraft.yaml`.
 
-The recipe currently uses `grade: devel` so it is intended for testing channels.
-Before a stable release, finish the desktop checks, change the grade to `stable`,
-rebuild, test the new revision and publish it. Store acceptance is determined by
-Canonical's review process. This is independent of Fedora's repositories.
+The recipe uses `grade: stable`, which permits releases to stable after testing.
+Upload future revisions to `edge` first. After the acceptance checks pass, promote
+the tested revision with:
+
+```sh
+snapcraft release quotient REVISION stable
+```
+
+Store acceptance is determined by Canonical's review process. Snap Store
+publication is independent of Fedora's repositories.
 
 ## Desktop acceptance checks
 
