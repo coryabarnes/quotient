@@ -41,6 +41,20 @@ cargo build --release
 The executable is in `target/release/`. Linux desktop builds require the native
 development libraries used by `eframe` and the file dialog backend.
 
+### Install on Linux
+
+After building, run the user-level installer:
+
+```sh
+./install.sh
+```
+
+This installs the executable in `~/.local/bin`, adds Quotient to your application
+launcher, and installs its SVG and PNG icons. No administrator access is needed.
+The launcher uses a direct icon path, and the installer refreshes KDE Plasma's
+application cache when available. Reopen Quotient after updating to refresh its
+taskbar icon.
+
 ### Run the app or calculator
 
 ```sh
