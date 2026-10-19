@@ -1,0 +1,50 @@
+name: quotient
+title: Quotient
+version: '0.1.0'
+summary: A plain-text notepad calculator with results beside each line
+description: |
+  Type a calculation on each line and see its result alongside it. Quotient
+  combines a plain-text editor with unit conversions, percentages, variables,
+  complex numbers, matrices, financial functions and high-precision math.
+
+  Write expressions such as "5 km to mi", "20% of 150" or "sqrt(-16)".
+  Define variables and functions, reuse earlier results, and click a result
+  to copy it. Syntax highlighting, autocomplete and searchable help keep
+  calculations easy to read and explore.
+
+  Includes light and dark themes, automatic saving, file import and export,
+  and a command-line calculator. Calculations run locally without an account
+  or internet connection.
+license: MIT
+website: https://github.com/coryabarnes/quotient
+source-code: https://github.com/coryabarnes/quotient
+issues: https://github.com/coryabarnes/quotient/issues
+icon: assets/quotient.png
+base: core24
+grade: devel
+confinement: strict
+
+platforms:
+  amd64:
+
+apps:
+  quotient:
+    command: bin/quotient
+    desktop: snap/gui/quotient.desktop
+    extensions: [gnome]
+    plugs: [home]
+
+parts:
+  quotient:
+    plugin: rust
+    source: .
+    rust-channel: stable
+    build-packages:
+      - libxkbcommon-dev
+      - libwayland-dev
+      - libudev-dev
+    override-build: |
+      craftctl default
+      install -Dm644 snap/gui/quotient.desktop "$CRAFT_PART_INSTALL/snap/gui/quotient.desktop"
+      install -Dm644 assets/quotient.png "$CRAFT_PART_INSTALL/meta/gui/quotient.png"
+      install -Dm644 LICENSE "$CRAFT_PART_INSTALL/usr/share/licenses/quotient/LICENSE"

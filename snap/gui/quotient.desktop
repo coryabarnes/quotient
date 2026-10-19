@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Quotient
+GenericName=Calculator
+Comment=Math in plain text, with results beside each line
+Exec=quotient %f
+Icon=${SNAP}/meta/gui/quotient.png
+Terminal=false
+Categories=Utility;Calculator;
+Keywords=calculator;math;units;convert;notepad;
+StartupWMClass=quotient

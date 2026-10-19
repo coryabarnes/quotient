@@ -1,0 +1,54 @@
+name: Build and test Snap
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'assets/**'
+      - 'Cargo.*'
+      - 'snap/**'
+      - '.github/workflows/snap.yml'
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'assets/**'
+      - 'Cargo.*'
+      - 'snap/**'
+      - '.github/workflows/snap.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: snap-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  snap:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Build confined Snap
+        uses: canonical/action-build@3bdaa03e1ba6bf59a65f84a751d943d549a54e79 # v1
+        id: build
+      - name: Install and test calculations
+        env:
+          SNAP_FILE: ${{ steps.build.outputs.snap }}
+        run: |
+          sudo snap install --dangerous "$SNAP_FILE"
+          snap connections quotient
+          snap run quotient -c '2 + 2' | tee calculation.txt
+          grep -Fx '2 + 2 = 4' calculation.txt
+          snap run quotient -c '5 km to mi' | grep '3.106855'
+          snap run quotient -c '20% of 150' | grep '30'
+          snap run quotient -c 'sqrt(-16)' | grep '4i'
+      - name: Save Snap package
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: quotient-snap-amd64
+          path: ${{ steps.build.outputs.snap }}
+          if-no-files-found: error
+          retention-days: 30
