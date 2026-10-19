@@ -1,0 +1,39 @@
+// Welcome to Quotient: math in plain text.
+// Each line is calculated as you type. Press F1 for help.
+
+// Variables
+price = 149.99
+tax = 8% of price
+total = price + tax
+
+// Percentages
+80 + 15%
+25% off 80
+
+// Units: convert with "to"
+5 km to mi
+speed = 60 mph
+speed * 2.5 h to km
+72 degF to degC
+3 cups + 2 tbsp to mL
+1.5 GiB to MB
+
+// Complex numbers and high precision (View menu)
+sqrt(-16)
+(2 + 3i) * (1 - i)
+
+// Statistics
+data = [10, 15, 12, 18, 20, 25]
+mean(data)
+std(data)
+trend(data)
+
+// Finance: monthly payment on a 30-year loan
+pmt(6.5% / 12, 30 * 12, 300000)
+
+// Your own functions
+f(x) = x^2 + 1
+f(3)
+
+// ans is the previous result; line5 is the result on line 5
+ans * 2

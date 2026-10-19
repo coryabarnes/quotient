@@ -1,0 +1,27 @@
+[package]
+name = "quotient"
+version = "0.1.0"
+edition = "2024"
+# The author shown in Help > About Quotient and the copyright notice.
+authors = ["Cory Barnes"]
+description = "Math in plain text: a notepad calculator with units, complex numbers and high precision"
+license = "MIT"
+
+[dependencies]
+astro-float = "0.9.6"
+eframe = { version = "0.37.0", optional = true, features = ["persistence"] }
+nalgebra = "0.35.0"
+num-complex = "0.4.6"
+rfd = { version = "0.17.2", optional = true }
+
+[features]
+default = ["gui"]
+# The desktop app. Build with --no-default-features for the headless CLI/library only.
+gui = ["dep:eframe", "dep:rfd"]
+
+[profile.release]
+lto = true
+strip = true
+
+[dev-dependencies]
+egui_kittest = { version = "0.37", features = ["eframe", "snapshot", "wgpu"] }
