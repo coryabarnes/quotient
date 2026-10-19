@@ -27,11 +27,19 @@ pmt(6.5% / 12, 360, 300000)           -1896.2040704789
 
 ![Quotient showing calculations, units, and inline results](docs/screenshots/calculations.png)
 
-### Snap package (in preparation)
+### Snap package (testing release)
 
-The Snap recipe and automated build checks are included in this repository.
-It is not yet published in the Snap Store. See [Snap build and publishing
-instructions](docs/SNAP.md) for testing and release steps.
+Quotient is available in the [Snap Store](https://snapcraft.io/quotient) on the
+`edge` testing channel for x86-64 Linux:
+
+```sh
+sudo snap install quotient --edge
+snap run quotient
+```
+
+This initial release has passed automated calculation and desktop startup checks
+on Ubuntu 24.04. See [Snap build and publishing instructions](docs/SNAP.md) for
+release details and desktop acceptance checks.
 
 Quotient provides a desktop interface and a command-line calculator. The desktop
 app is built with `eframe`/`egui`. Linux is the currently verified platform;

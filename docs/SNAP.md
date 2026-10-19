@@ -5,6 +5,19 @@ and Snapcraft's GNOME desktop extension. The initial target is x86-64 (`amd64`).
 The source recipe is `snap/snapcraft.yaml`; the build and smoke checks are in
 `.github/workflows/snap.yml`.
 
+## Current release
+
+Version 0.1.0, revision 1, is published on `latest/edge`. The Snap passed
+Canonical's automated review. Its build, installation, representative calculations
+and desktop startup passed on Ubuntu 24.04; calculations also passed on Fedora 44.
+
+```sh
+sudo snap install quotient --edge
+```
+
+The first release is a testing build. A stable-channel release follows the
+remaining desktop acceptance checks below.
+
 ## Build and test
 
 With Snapcraft and a supported build provider installed:
