@@ -21,7 +21,7 @@ source-code: https://github.com/coryabarnes/quotient
 issues: https://github.com/coryabarnes/quotient/issues
 icon: assets/quotient-512.png
 base: core24
-grade: devel
+grade: stable
 confinement: strict
 
 platforms:
