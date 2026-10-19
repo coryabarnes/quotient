@@ -36,16 +36,25 @@ apps:
 
 parts:
   quotient:
-    plugin: rust
+    plugin: nil
     source: .
-    rust-channel: stable
-    build-snaps: [rustup]
     build-packages:
+      - curl
+      - gcc
+      - pkg-config
       - libxkbcommon-dev
       - libwayland-dev
       - libudev-dev
     override-build: |
-      craftctl default
+      # Provision Rust explicitly: Snapcraft 9's Rust plugin can fail to locate
+      # rustup in a clean CI environment before running its lifecycle steps.
+      export CARGO_HOME="$CRAFT_PART_BUILD/.cargo"
+      export RUSTUP_HOME="$CRAFT_PART_BUILD/.rustup"
+      curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -o rustup-init.sh
+      sh rustup-init.sh -y --profile minimal --default-toolchain stable --no-modify-path
+      export PATH="$CARGO_HOME/bin:$PATH"
+      cargo build --locked --release
+      install -Dm755 target/release/quotient "$CRAFT_PART_INSTALL/bin/quotient"
       install -Dm644 snap/gui/quotient.desktop "$CRAFT_PART_INSTALL/snap/gui/quotient.desktop"
       install -Dm644 assets/quotient.png "$CRAFT_PART_INSTALL/meta/gui/quotient.png"
       install -Dm644 LICENSE "$CRAFT_PART_INSTALL/usr/share/licenses/quotient/LICENSE"
