@@ -25,6 +25,14 @@ pmt(6.5% / 12, 360, 300000)           -1896.2040704789
 
 ## Getting started
 
+![Quotient showing calculations, units, and inline results](docs/screenshots/calculations.png)
+
+### Snap package (in preparation)
+
+The Snap recipe and automated build checks are included in this repository.
+It is not yet published in the Snap Store. See [Snap build and publishing
+instructions](docs/SNAP.md) for testing and release steps.
+
 Quotient provides a desktop interface and a command-line calculator. The desktop
 app is built with `eframe`/`egui`. Linux is the currently verified platform;
 macOS and Windows builds have not yet been verified.

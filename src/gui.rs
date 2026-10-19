@@ -32,10 +32,15 @@ fn font() -> FontId {
 }
 
 pub fn run(path: Option<PathBuf>) -> eframe::Result {
+    // Snap exports this desktop filename; Wayland uses it to match the window
+    // to the launcher and its icon. Native installs retain their existing ID.
+    let app_id = std::env::var("SNAP_INSTANCE_NAME")
+        .map(|name| format!("{name}_quotient"))
+        .unwrap_or_else(|_| "quotient".to_string());
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_title("Quotient")
-            .with_app_id("quotient")
+            .with_app_id(app_id)
             .with_icon(
                 eframe::icon_data::from_png_bytes(include_bytes!("../assets/quotient.png"))
                     .expect("bundled Quotient icon must be a valid PNG"),

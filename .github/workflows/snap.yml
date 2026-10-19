@@ -45,6 +45,18 @@ jobs:
           snap run quotient -c '5 km to mi' | grep '3.106855'
           snap run quotient -c '20% of 150' | grep '30'
           snap run quotient -c 'sqrt(-16)' | grep '4i'
+      - name: Check desktop launch
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb x11-utils
+          set +e
+          LIBGL_ALWAYS_SOFTWARE=1 xvfb-run -a dbus-run-session -- \
+            timeout 15s snap run quotient > desktop-launch.log 2>&1
+          status=$?
+          set -e
+          cat desktop-launch.log
+          # A healthy GUI remains open until timeout; a startup crash exits early.
+          test "$status" -eq 124
       - name: Save Snap package
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
