@@ -19,7 +19,7 @@ license: MIT
 website: https://github.com/coryabarnes/quotient
 source-code: https://github.com/coryabarnes/quotient
 issues: https://github.com/coryabarnes/quotient/issues
-icon: assets/quotient.png
+icon: assets/quotient-512.png
 base: core24
 grade: devel
 confinement: strict
@@ -56,5 +56,5 @@ parts:
       cargo build --locked --release
       install -Dm755 target/release/quotient "$CRAFT_PART_INSTALL/bin/quotient"
       install -Dm644 snap/gui/quotient.desktop "$CRAFT_PART_INSTALL/snap/gui/quotient.desktop"
-      install -Dm644 assets/quotient.png "$CRAFT_PART_INSTALL/meta/gui/quotient.png"
+      install -Dm644 assets/quotient-512.png "$CRAFT_PART_INSTALL/meta/gui/quotient.png"
       install -Dm644 LICENSE "$CRAFT_PART_INSTALL/usr/share/licenses/quotient/LICENSE"
