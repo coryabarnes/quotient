@@ -39,6 +39,7 @@ parts:
     plugin: rust
     source: .
     rust-channel: stable
+    build-snaps: [rustup]
     build-packages:
       - libxkbcommon-dev
       - libwayland-dev
