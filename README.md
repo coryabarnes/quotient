@@ -1,9 +1,15 @@
+<p align="center">
+  <img src="assets/quotient.png" width="112" alt="Quotient app icon">
+</p>
+
 # Quotient
+
+**A notepad that calculates. Built in Rust.**
 
 Math in plain text. Type calculations on the left, one per line; each result
 appears beside its line as you type.
 
-Quotient started as a Rust rewrite of [calctxt](https://calctxt.com) by Jason
+Created by **Cory A. Barnes**. Quotient started as a Rust rewrite of [calctxt](https://calctxt.com) by Jason
 Lotito and goes well beyond it: units, complex numbers, high precision, 196
 functions, and an editor with highlighting and autocomplete.
 
@@ -17,14 +23,32 @@ sqrt(-16)                             4i
 pmt(6.5% / 12, 360, 300000)           -1896.2040704789
 ```
 
-## Running it
+## Getting started
+
+Quotient provides a desktop interface and a command-line calculator. The desktop
+app is built with `eframe`/`egui`. Linux is the currently verified platform;
+macOS and Windows builds have not yet been verified.
+
+Install a current stable [Rust toolchain](https://www.rust-lang.org/tools/install),
+then clone and build:
+
+```sh
+git clone https://github.com/coryabarnes/quotient.git
+cd quotient
+cargo build --release
+```
+
+The executable is in `target/release/`. Linux desktop builds require the native
+development libraries used by `eframe` and the file dialog backend.
+
+### Run the app or calculator
 
 ```sh
 cargo run --release                         # the app
 cargo run --release -- notes.txt            # open a file
 cargo run --release -- -c "5 km to mi"      # calculate from the command line
 cargo run --release -- --eval notes.txt     # print a file's results (- for stdin)
-cargo test                                  # 84 tests, including GUI tests
+cargo test                                  # tests, including GUI tests
 ```
 
 Command-line options: `--digits N|full`, `--precision N` (high precision with N
@@ -104,6 +128,22 @@ format (any calctxt file opens) and its custom functions (`trend`, `sma`, `cagr`
 - mathjs features not included: BigNumber fractions, symbolic algebra
   (`simplify`, `derivative`), sparse matrices, `compile`/`parse`/`chain`, and
   matrix decompositions returned as objects (`lup`, `slu`, `qr`).
+
+## Development and feedback
+
+Bug reports and feature suggestions are welcome through
+[GitHub Issues](https://github.com/coryabarnes/quotient/issues). For a calculation
+bug, include the expression, expected result, actual result, and your platform.
+
+To work on the calculation engine without desktop dependencies:
+
+```sh
+cargo test --no-default-features
+cargo run --no-default-features -- -c "5 km to mi"
+```
+
+The SVG icon source and transparent PNG export are in `assets/`. The desktop
+executable embeds the PNG as its window icon.
 
 ## License
 
