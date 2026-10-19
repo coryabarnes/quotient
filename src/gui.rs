@@ -16,6 +16,8 @@ use quotient::{Document, Kind, Settings, WELCOME, calculate, catalog, units};
 const AUTOSAVE_AFTER: Duration = Duration::from_secs(2);
 const STATUS_FOR: Duration = Duration::from_secs(4);
 const FONT_SIZE: f32 = 15.0;
+/// Space between the results column's edges and its text.
+const RESULT_PADDING: f32 = 14.0;
 const AUTHOR: &str = env!("CARGO_PKG_AUTHORS");
 const COPYRIGHT_YEAR: &str = "2026";
 const LICENSE: &str = include_str!("../LICENSE");
@@ -202,6 +204,45 @@ impl Prefs {
 
 // ---------------------------------------------------------------- state
 
+/// Everything the editor's layout depends on besides the text itself.
+#[derive(Clone, PartialEq)]
+struct LayoutKey {
+    text: String,
+    wrap_width: f32,
+    dark: bool,
+    variables: Vec<String>,
+    /// Extra space below a line, to fit its result when that wraps: (line, height).
+    gaps: Vec<(usize, f32)>,
+}
+
+/// Opens vertical space below the given lines by moving later rows down, so a
+/// long result has room beside its line. Cursor placement and clicks use these
+/// row positions too, so editing is unaffected.
+fn add_gaps(galley: &Galley, gaps: &[(usize, f32)]) -> Galley {
+    let mut galley = galley.clone();
+    let mut line = 0;
+    let mut shift = 0.0;
+    let last = galley.rows.len().saturating_sub(1);
+    for (i, row) in galley.rows.iter_mut().enumerate() {
+        row.pos.y += shift;
+        // A gap goes after the last row of its line.
+        if row.ends_with_newline || i == last {
+            shift += gaps.iter().filter(|(l, _)| *l == line).map(|(_, h)| h).sum::<f32>();
+            line += 1;
+        }
+    }
+    galley.rect.max.y += shift;
+    galley.mesh_bounds.max.y += shift;
+    galley
+}
+
+/// Lays out a result wrapped to the results column.
+fn result_galley(ui: &egui::Ui, text: &str, color: Color32, width: f32) -> Arc<Galley> {
+    let mut job = LayoutJob::single_section(text.to_string(), TextFormat::simple(font(), color));
+    job.wrap = TextWrapping::wrap_at_width(width);
+    ui.fonts_mut(|f| f.layout_job(job))
+}
+
 /// Something that would replace the current untitled text, waiting for confirmation.
 #[derive(Clone, Debug)]
 enum Action {
@@ -243,7 +284,7 @@ struct App {
     /// A completion clicked in the popup, applied on the next frame.
     clicked: Option<usize>,
     /// The highlighted layout of the last text, reused while nothing changes.
-    layout_cache: Option<(String, f32, bool, Vec<String>, Arc<Galley>)>,
+    layout_cache: Option<(LayoutKey, Arc<Galley>)>,
     title: String,
 }
 
@@ -599,24 +640,39 @@ impl App {
         let editor_width = (total * 0.6).clamp(200.0_f32.min(total), (total - 140.0).max(120.0));
         let results_width = (total - editor_width - gap).max(60.0);
 
+        // Results wider than their column wrap; the editor opens a gap below
+        // their line so the whole result fits without covering the next one.
+        let result_width = results_width - RESULT_PADDING;
+        let row_height = ui.fonts_mut(|f| f.row_height(&font()));
+        let gaps: Vec<(usize, f32)> = self
+            .doc
+            .outputs
+            .iter()
+            .filter(|o| o.kind != Kind::Info)
+            .filter_map(|o| {
+                let height = result_galley(ui, o.value.as_deref()?, Color32::WHITE, result_width).size().y;
+                (height > row_height + 0.5).then_some((o.end_line, height - row_height))
+            })
+            .collect();
+
         ScrollArea::vertical().id_salt("document").auto_shrink([false, false]).show(ui, |ui| {
             ui.horizontal_top(|ui| {
                 ui.spacing_mut().item_spacing.x = 0.0;
                 let variables = self.doc.variables.clone();
                 let cache = &mut self.layout_cache;
                 let mut layouter = |ui: &egui::Ui, buf: &dyn TextBuffer, wrap_width: f32| -> Arc<Galley> {
-                    let text = buf.as_str();
-                    if let Some((t, w, d, v, g)) = cache.as_ref()
-                        && t == text
-                        && *w == wrap_width
-                        && *d == dark
-                        && *v == variables
+                    let key = LayoutKey { text: buf.as_str().to_string(), wrap_width, dark, variables: variables.clone(), gaps: gaps.clone() };
+                    if let Some((k, g)) = cache.as_ref()
+                        && *k == key
                     {
                         return g.clone();
                     }
-                    let job = highlight_job(text, &variables, &p, wrap_width);
-                    let galley = ui.fonts_mut(|f| f.layout_job(job));
-                    *cache = Some((text.to_string(), wrap_width, dark, variables.clone(), galley.clone()));
+                    let job = highlight_job(&key.text, &variables, &p, wrap_width);
+                    let mut galley = ui.fonts_mut(|f| f.layout_job(job));
+                    if !key.gaps.is_empty() {
+                        galley = Arc::new(add_gaps(&galley, &key.gaps));
+                    }
+                    *cache = Some((key, galley.clone()));
                     galley
                 };
                 let output = TextEdit::multiline(&mut self.text)
@@ -631,6 +687,8 @@ impl App {
                     .show(ui);
                 if output.response.response.changed() {
                     self.edited();
+                    // The gaps depend on the new results; lay out again next frame.
+                    ctx.request_repaint();
                 }
                 ui.add_space(gap);
                 let height = output.response.response.rect.height().max(ui.clip_rect().bottom() - output.response.response.rect.top());
@@ -663,8 +721,6 @@ impl App {
         for out in outputs {
             let Some(row) = line_rows.get(out.end_line) else { continue };
             let value = out.value.clone().unwrap_or_default();
-            let rect = Rect::from_min_size(pos2(column.left() + 10.0, row.top()), vec2(column.width() - 14.0, row.height()));
-            let response = ui.interact(rect, ui.scope_id().with(("result", out.start_line)), Sense::click());
             let editing = editing_line.is_some_and(|l| (out.start_line..=out.end_line).contains(&l));
             let color = match out.kind {
                 Kind::Error if editing => p.comment,
@@ -672,20 +728,19 @@ impl App {
                 Kind::Assignment => p.assignment,
                 _ => p.result,
             };
+            // The whole result, wrapped to the column; the editor left room for it.
+            let text = result_galley(ui, &value, color, column.width() - RESULT_PADDING);
+            let rect = Rect::from_min_size(pos2(column.left() + 10.0, row.top()), vec2(column.width() - RESULT_PADDING, text.size().y));
+            let response = ui.interact(rect, ui.scope_id().with(("result", out.start_line)), Sense::click());
             if response.hovered() {
                 ui.painter().rect_filled(rect.expand2(Vec2::new(4.0, 0.0)), 3.0, p.hover);
             }
-            let mut first = value.lines().next().unwrap_or("").to_string();
-            if value.contains('\n') {
-                first.push_str("  ⋯");
-            }
-            let mut job = LayoutJob::single_section(first, TextFormat::simple(font(), color));
-            job.wrap = TextWrapping::truncate_at_width(rect.width());
-            let text = ui.fonts_mut(|f| f.layout_job(job));
             ui.painter().galley(rect.left_top(), text, color);
-            let tip = if out.kind == Kind::Error { value.clone() } else { format!("{value}\n\nClick to copy") };
-            let response = response.on_hover_cursor(egui::CursorIcon::PointingHand).on_hover_text(RichText::new(tip).monospace());
-            if response.clicked() && out.kind != Kind::Error {
+            if out.kind == Kind::Error {
+                continue;
+            }
+            let response = response.on_hover_cursor(egui::CursorIcon::PointingHand).on_hover_text("Click to copy");
+            if response.clicked() {
                 ui.ctx().copy_text(value.clone());
                 let short: String = value.lines().next().unwrap_or("").chars().take(40).collect();
                 self.say(format!("Copied {short}"), false);
@@ -1189,6 +1244,40 @@ mod tests {
     }
 
     #[test]
+    fn long_results_wrap_and_push_the_next_line_down() {
+        let mut h = harness();
+        h.state_mut().text = "1:60\n1 + 1".into();
+        h.state_mut().recalculate();
+        h.run();
+        let (key, galley) = h.state().layout_cache.clone().expect("laid out");
+        assert_eq!(key.gaps.len(), 1, "the long list needs extra room");
+        assert_eq!(key.gaps[0].0, 0, "below line 1");
+        // The second line starts below the first by the normal row height plus the gap.
+        let rows = &galley.rows;
+        let spacing = rows[1].pos.y - rows[0].pos.y;
+        assert!(spacing > rows[0].rect().height() + key.gaps[0].1 - 1.0, "spacing {spacing}");
+        // Short results need no gaps.
+        h.state_mut().text = "1 + 1\n2 + 2".into();
+        h.state_mut().recalculate();
+        h.run();
+        assert!(h.state().layout_cache.as_ref().expect("laid out").0.gaps.is_empty());
+    }
+
+    #[test]
+    fn multi_line_results_are_shown_in_full() {
+        let mut h = harness();
+        h.state_mut().text = "trend(1, 2, 4)\nx = 1".into();
+        h.state_mut().recalculate();
+        h.run();
+        let (key, _) = h.state().layout_cache.clone().expect("laid out");
+        // trend() has 6 lines of output, so its line gets room for 5 more rows.
+        let row = h.ctx.fonts_mut(|f| f.row_height(&font()));
+        assert_eq!(key.gaps.len(), 1);
+        let rows_of_gap = key.gaps[0].1 / row;
+        assert!((4.5..5.5).contains(&rows_of_gap), "gap of {rows_of_gap} rows");
+    }
+
+    #[test]
     fn renders() {
         let mut h = harness();
         h.run();
@@ -1214,7 +1303,7 @@ mod tests {
         let mut h = empty_harness();
         h.state_mut().prefs.theme = Theme::Light;
         h.state().apply_theme(&h.ctx);
-        type_text(&mut h, "price = 1299\ntax = 8% of price\nprice + tax to fraction\n3 cups to mL\nsqrt(-9)\nbogus + 1\nmea");
+        type_text(&mut h, "price = 1299\ntax = 8% of price\nprice + tax to fraction\n3 cups to mL\n1:40\ntrend(3, 5, 4)\nsqrt(-9)\nbogus + 1\nmea");
         let image = h.render().expect("render");
         if let Ok(dir) = std::env::var("QUOTIENT_SCREENSHOTS") {
             image.save(format!("{dir}/light-popup.png")).unwrap();
